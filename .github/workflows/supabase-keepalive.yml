@@ -1,12 +1,11 @@
 name: Keep Supabase awake
 
-# Free Supabase projects pause after 7 days of no activity. This pings the DB
-# every ~3 days so the inactivity timer never runs out. A single authenticated
-# query counts as activity.
+# Free Supabase projects can pause after 7 days of low activity. Supabase says a
+# few requests a day is usually enough, so this queries the DB twice a day.
 
 on:
   schedule:
-    - cron: "0 6 */5 * *" # every ~5 days at 06:00 UTC (under the 7-day window)
+    - cron: "0 6,18 * * *" # twice a day at 06:00 and 18:00 UTC
   workflow_dispatch: {} # allow manual runs from the Actions tab
 
 jobs:
