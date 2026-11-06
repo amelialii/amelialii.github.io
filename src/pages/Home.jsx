@@ -26,7 +26,7 @@ function Home() {
             <p>CS & Informatics @ University of Washington</p>
             <div className="icons">
               <IconLink href="https://www.linkedin.com/in/amelial9/" src={linkedin} alt="LinkedIn link" />
-              <IconLink href="https://github.com/aameliali" src={github} alt="GitHub link" />
+              <IconLink href="https://github.com/amelialii" src={github} alt="GitHub link" />
               <IconLink href="mailto:amelial9@uw.edu" src={email} alt="Email link" />
             </div>
           </div>

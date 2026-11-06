@@ -29,7 +29,7 @@ export const developmentProjects = [
       description: "Developed VoxTune, an interactive vocal warmup web application that allows users to upload, organize, and practice vocal exercises.",
       image: voxtune,
       tech: ['React', 'Vite', 'Firebase', 'Web Development'],
-      github: "https://github.com/aameliali/VoxTune"
+      github: "https://github.com/amelialii/VoxTune"
     },
     {
       title: "PetSwipe",
