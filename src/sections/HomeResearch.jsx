@@ -1,6 +1,7 @@
 import './HomeResearch.css';
-import researchPdf from '../assets/research/Undergrad Research Symposium 2025.pdf';
-import researchPdf2 from '../assets/research/Undergrad Research Symposium 2026.pdf';
+// Served from public/research/ at stable URLs (not hashed by Vite).
+const researchPdf = '/research/urs-2025-poster.pdf';
+const researchPdf2 = '/research/urs-2026-poster.pdf';
 
 
 const HomeResearch = () => {
