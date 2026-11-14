@@ -110,6 +110,9 @@ function AskMily() {
       <div className="section-title-wrapper">
         <h2 className="section-title">Ask Mily</h2>
       </div>
+
+      <br></br>
+
       <p className="mily-sub">
         my little AI assistant; ask Mily about my work, projects, or what I'm into.
       </p>
