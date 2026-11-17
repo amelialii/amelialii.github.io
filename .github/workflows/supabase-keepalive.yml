@@ -26,7 +26,9 @@ jobs:
           # Shape of the URL without printing it (secrets are masked anyway).
           case "$SUPABASE_URL" in
             https://*.supabase.co) echo "SUPABASE_URL looks like a plain project URL" ;;
-            *) echo "SUPABASE_URL is NOT a plain https://<ref>.supabase.co URL" ;;
+            *) echo "SUPABASE_URL must be the project API URL, https://<ref>.supabase.co" >&2
+               echo "(not the supabase.com/dashboard/... link). Fix the repo secret." >&2
+               exit 1 ;;
           esac
 
           # 1) Write: insert a row into public.heartbeat (expects 201 Created).
@@ -54,6 +56,10 @@ jobs:
           echo "chat_logs read responded: $code"
           if [ "$code" != "200" ]; then
             echo "Read failed ($code): $(cat /tmp/read.txt)" >&2
+            fail=1
+          elif [ "$(head -c1 /tmp/read.txt)" != "[" ]; then
+            # A real PostgREST read returns a JSON array; anything else is a web page.
+            echo "Read returned 200 but not JSON, so it never reached the database" >&2
             fail=1
           fi
 
