@@ -1,9 +1,10 @@
 name: Keep Supabase awake
 
-# Free Supabase projects pause after 7 days of "insufficient activity". Two tiny
-# reads a day weren't enough (Supabase sent a pause warning anyway), so this
-# now runs every 4 hours and does a real write plus a read.
+# Free Supabase projects pause after 7 days of "insufficient activity". This
+# writes a row to public.heartbeat every 4 hours so the database sees real use.
 # One-time setup: run supabase/heartbeat.sql in the Supabase SQL editor.
+# SUPABASE_URL must be https://<ref>.supabase.co (not the dashboard link) and
+# SUPABASE_KEY the anon key, which can only insert into heartbeat.
 
 on:
   schedule:
@@ -14,25 +15,23 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Write a heartbeat row and read from the DB
+      - name: Write a heartbeat row
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           set -u
-          fail=0
           SUPABASE_URL="${SUPABASE_URL%/}" # drop a trailing slash if the secret has one
 
-          # Shape of the URL without printing it (secrets are masked anyway).
           case "$SUPABASE_URL" in
-            https://*.supabase.co) echo "SUPABASE_URL looks like a plain project URL" ;;
+            https://*.supabase.co) ;;
             *) echo "SUPABASE_URL must be the project API URL, https://<ref>.supabase.co" >&2
                echo "(not the supabase.com/dashboard/... link). Fix the repo secret." >&2
                exit 1 ;;
           esac
 
-          # 1) Write: insert a row into public.heartbeat (expects 201 Created).
-          code=$(curl -sS -D /tmp/insert-headers.txt -o /tmp/insert.txt -w "%{http_code}" -X POST \
+          # Insert a row into public.heartbeat (expects 201 Created).
+          code=$(curl -sS -o /tmp/insert.txt -w "%{http_code}" -X POST \
             "$SUPABASE_URL/rest/v1/heartbeat" \
             -H "apikey: $SUPABASE_KEY" \
             -H "Authorization: Bearer $SUPABASE_KEY" \
@@ -42,25 +41,6 @@ jobs:
           echo "Heartbeat insert responded: $code"
           if [ "$code" != "201" ]; then
             echo "Insert failed ($code): $(cat /tmp/insert.txt)" >&2
-            echo "Response headers:" >&2
-            grep -iE '^(HTTP|server|allow|content-type|location|via|sb-|x-)' /tmp/insert-headers.txt >&2 || true
-            echo "Did you run supabase/heartbeat.sql in the Supabase SQL editor?" >&2
-            fail=1
+            echo "Check that supabase/heartbeat.sql was run and SUPABASE_KEY is the anon key." >&2
+            exit 1
           fi
-
-          # 2) Read: same query the workflow has always made (expects 200).
-          code=$(curl -sS -o /tmp/read.txt -w "%{http_code}" \
-            "$SUPABASE_URL/rest/v1/chat_logs?select=id&limit=1" \
-            -H "apikey: $SUPABASE_KEY" \
-            -H "Authorization: Bearer $SUPABASE_KEY")
-          echo "chat_logs read responded: $code"
-          if [ "$code" != "200" ]; then
-            echo "Read failed ($code): $(cat /tmp/read.txt)" >&2
-            fail=1
-          elif [ "$(head -c1 /tmp/read.txt)" != "[" ]; then
-            # A real PostgREST read returns a JSON array; anything else is a web page.
-            echo "Read returned 200 but not JSON, so it never reached the database" >&2
-            fail=1
-          fi
-
-          exit $fail
