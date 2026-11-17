@@ -21,9 +21,16 @@ jobs:
         run: |
           set -u
           fail=0
+          SUPABASE_URL="${SUPABASE_URL%/}" # drop a trailing slash if the secret has one
+
+          # Shape of the URL without printing it (secrets are masked anyway).
+          case "$SUPABASE_URL" in
+            https://*.supabase.co) echo "SUPABASE_URL looks like a plain project URL" ;;
+            *) echo "SUPABASE_URL is NOT a plain https://<ref>.supabase.co URL" ;;
+          esac
 
           # 1) Write: insert a row into public.heartbeat (expects 201 Created).
-          code=$(curl -sS -o /tmp/insert.txt -w "%{http_code}" -X POST \
+          code=$(curl -sS -D /tmp/insert-headers.txt -o /tmp/insert.txt -w "%{http_code}" -X POST \
             "$SUPABASE_URL/rest/v1/heartbeat" \
             -H "apikey: $SUPABASE_KEY" \
             -H "Authorization: Bearer $SUPABASE_KEY" \
@@ -33,6 +40,8 @@ jobs:
           echo "Heartbeat insert responded: $code"
           if [ "$code" != "201" ]; then
             echo "Insert failed ($code): $(cat /tmp/insert.txt)" >&2
+            echo "Response headers:" >&2
+            grep -iE '^(HTTP|server|allow|content-type|location|via|sb-|x-)' /tmp/insert-headers.txt >&2 || true
             echo "Did you run supabase/heartbeat.sql in the Supabase SQL editor?" >&2
             fail=1
           fi
